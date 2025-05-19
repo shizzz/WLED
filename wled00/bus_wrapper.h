@@ -502,7 +502,7 @@ class PolyBus {
   }
 
   static void* create(uint8_t busType, uint8_t* pins, uint16_t len, uint8_t channel) {
-    #if defined(ARDUINO_ARCH_ESP32) && !(defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3))
+    #if defined(ARDUINO_ARCH_ESP32) && !(defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6))
     // NOTE: "channel" is only used on ESP32 (and its variants) for RMT channel allocation
     // since 0.15.0-b3 I2S1 is favoured for classic ESP32 and moved to position 0 (channel 0) so we need to subtract 1 for correct RMT allocation
     if (!_useParallelI2S && channel > 0) channel--; // accommodate I2S1 which is used as 1st bus on classic ESP32
@@ -592,6 +592,7 @@ class PolyBus {
       #endif
     #endif
     #ifdef CONFIG_IDF_TARGET_ESP32C6
+      case I_32_RN_NEO_3: busPtr = new B_32_C6_NEO_3(len, pins[0]); break;
       case I_32_I2_NEO_3: busPtr = new B_32_C6_NEO_3(len, pins[0]); break;
       case I_32_I2_NEO_4: busPtr = new B_32_C6_NEO_4(len, pins[0]); break;
       case I_32_I2_400_3: busPtr = new B_32_C6_400_3(len, pins[0]); break;
@@ -1549,6 +1550,12 @@ class PolyBus {
       }
       #elif defined(CONFIG_IDF_TARGET_ESP32C3)
       // On ESP32-C3 only the first 2 RMT channels are usable for transmitting
+      if (num > 1) return I_NONE;
+      #elif defined(CONFIG_IDF_TARGET_ESP32C6)
+      switch (busType) {
+        case TYPE_WS2812_RGB:
+          return I_32_I2_NEO_3;
+      }
       if (num > 1) return I_NONE;
       //if (num > 1) offset = 1; // I2S not supported yet (only 1 I2S)
       #elif defined(CONFIG_IDF_TARGET_ESP32S3)

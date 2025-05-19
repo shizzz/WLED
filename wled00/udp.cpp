@@ -945,7 +945,7 @@ uint8_t realtimeBroadcast(uint8_t type, IPAddress client, uint16_t length, const
 #ifndef WLED_DISABLE_ESPNOW
 // ESP-NOW message sent callback function
 void espNowSentCB(uint8_t* address, uint8_t status) {
-    DEBUG_PRINTF_P(PSTR("Message sent to " MACSTR ", status: %d\n"), MAC2STR(address), status);
+    //DEBUG_PRINTF_P(PSTR("Message sent to " MACSTR ", status: %d\n"), MAC2STR(address), status);
 }
 
 // ESP-NOW message receive callback function

@@ -140,7 +140,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     Bus::setGlobalAWMode(request->arg(F("AW")).toInt());
     strip.setTargetFps(request->arg(F("FR")).toInt());
     useGlobalLedBuffer = request->hasArg(F("LD"));
-    #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+    #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C6)
     useParallelI2S = request->hasArg(F("PR"));
     #endif
 

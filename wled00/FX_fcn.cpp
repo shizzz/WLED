@@ -1381,7 +1381,7 @@ void WS2812FX::finalizeInit() {
   _hasWhiteChannel = _isOffRefreshRequired = false;
 
   unsigned digitalCount = 0;
-  #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+  #if defined(ARDUINO_ARCH_ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C6)
   // determine if it is sensible to use parallel I2S outputs on ESP32 (i.e. more than 5 outputs = 1 I2S + 4 RMT)
   unsigned maxLedsOnBus = 0;
   for (const auto &bus : busConfigs) {

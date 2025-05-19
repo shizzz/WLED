@@ -207,6 +207,10 @@ bool PinManager::isPinOk(byte gpio, bool output)
     #if ARDUINO_USB_CDC_ON_BOOT == 1 || ARDUINO_USB_DFU_ON_BOOT == 1
     if (gpio > 17 && gpio < 20) return false;     // 18-19 USB-JTAG
     #endif
+  #elif defined(CONFIG_IDF_TARGET_XIAOESP32C6)
+    // strapping pins: 4, 5, 8, 9
+    if (gpio > 3 && gpio < 8) return false;     // 4-7 USB-JTAG
+    if (gpio > 17 && gpio < 24) return false;     // 18-24 SPI FLASH
   #elif defined(CONFIG_IDF_TARGET_ESP32C6)
     // strapping pins: 4, 5, 8, 9
     if (gpio > 11 && gpio < 14) return false;     // 12-13 USB-JTAG

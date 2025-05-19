@@ -51,7 +51,7 @@ class DeepSleepUsermod : public Usermod {
           return true;
       }
     #endif
-    #ifdef CONFIG_IDF_TARGET_ESP32C3 // ESP32 C3: GPIOs 0-5 can be used for wake-up
+    #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) // ESP32 C3: GPIOs 0-5 can be used for wake-up
       if (wakePin <= 5) {
           return true;
       }
@@ -110,7 +110,7 @@ class DeepSleepUsermod : public Usermod {
       if(wakeupAfter)
       esp_sleep_enable_timer_wakeup((uint64_t)wakeupAfter * (uint64_t)1e6); //sleep for x seconds
 
-    #if defined(CONFIG_IDF_TARGET_ESP32C3) // ESP32 C3
+    #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) // ESP32 C3
     if(noPull)
       gpio_sleep_set_pull_mode((gpio_num_t)wakeupPin, GPIO_FLOATING);
     else { // enable pullup/pulldown resistor

@@ -9,11 +9,18 @@
  */
 
 //Use userVar0 and userVar1 (API calls &U0=,&U1=, uint16_t)
+/*
+ * Physical IO
+ */
+#define PIN_UP_RELAY 14
+#define PIN_DN_RELAY 3
 
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
-
+  pinMode(PIN_UP_RELAY, OUTPUT);
+  pinMode(PIN_DN_RELAY, OUTPUT);
+  userVar0 = 1;
 }
 
 //gets called every time WiFi is (re-)connected. Initialize own network interfaces here
@@ -22,8 +29,20 @@ void userConnected()
 
 }
 
+void handleRelay()
+{
+  //up and down relays
+  if (userVar0 == 1) {
+      digitalWrite(PIN_UP_RELAY, HIGH);
+      digitalWrite(PIN_DN_RELAY, LOW);
+  } else {
+      digitalWrite(PIN_UP_RELAY, LOW);
+      digitalWrite(PIN_DN_RELAY, HIGH);
+  }
+}
+
 //loop. You can use "if (WLED_CONNECTED)" to check for successful connection
 void userLoop()
 {
-
+  handleRelay();
 }

@@ -264,6 +264,12 @@ int getSignalQuality(int rssi)
     return quality;
 }
 
+String MAC2STR(const uint8_t* mac) {
+  char buf[18]; // "XX:XX:XX:XX:XX:XX" + null terminator
+  snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  return String(buf);
+}
 
 void fillMAC2Str(char *str, const uint8_t *mac) {
   sprintf_P(str, PSTR("%02x%02x%02x%02x%02x%02x"), MAC2STR(mac));

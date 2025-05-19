@@ -808,7 +808,7 @@ unsigned BusManager::memUsage() {
   // front buffers are always allocated per bus
   unsigned size = 0;
   unsigned maxI2S = 0;
-  #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(ESP8266)
+  #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(ESP8266)
   unsigned digitalCount = 0;
     #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
       #define MAX_RMT 4
@@ -818,7 +818,7 @@ unsigned BusManager::memUsage() {
   #endif
   for (const auto &bus : busses) {
     unsigned busSize = bus->getBusSize();
-    #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(ESP8266)
+    #if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(ESP8266)
     if (bus->isDigital() && !bus->is2Pin()) digitalCount++;
     if (PolyBus::isParallelI2S1Output() && digitalCount > MAX_RMT) {
       unsigned i2sCommonSize = 3 * bus->getLength() * bus->getNumberOfChannels() * (bus->is16bit()+1);
@@ -906,7 +906,7 @@ void BusManager::esp32RMTInvertIdle() {
   unsigned u = 0;
   for (auto &bus : busses) {
     if (bus->getLength()==0 || !bus->isDigital() || bus->is2Pin()) continue;
-    #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, only has 1 I2S but NPB does not support it ATM
+    #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)   // 2 RMT, only has 1 I2S but NPB does not support it ATM
       if (u > 1) return;
       rmt = u;
     #elif defined(CONFIG_IDF_TARGET_ESP32S2)  // 4 RMT, only has 1 I2S bus, supported in NPB

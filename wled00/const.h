@@ -52,7 +52,7 @@
     #define WLED_MIN_VIRTUAL_BUSSES 3         // no longer used for bus creation but used to distinguish S2/S3 in UI
   #else
     #define WLED_MAX_ANALOG_CHANNELS (LEDC_CHANNEL_MAX*LEDC_SPEED_MODE_MAX)
-    #if defined(CONFIG_IDF_TARGET_ESP32C3)    // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
+    #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)   // 2 RMT, 6 LEDC, only has 1 I2S but NPB does not support it ATM
       #define WLED_MAX_BUSSES 6               // will allow 2 digital & 2 analog RGB or 6 PWM white
       #define WLED_MAX_DIGITAL_CHANNELS 2
       //#define WLED_MAX_ANALOG_CHANNELS 6
@@ -98,7 +98,7 @@
     #ifndef WLED_MAX_DIGITAL_CHANNELS
       #error You must also define WLED_MAX_DIGITAL_CHANNELS.
     #endif
-    #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3)
+    #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
       #define WLED_MIN_VIRTUAL_BUSSES 4
     #else
       #define WLED_MIN_VIRTUAL_BUSSES 6
@@ -494,7 +494,7 @@
   #else
     #if defined(ARDUINO_ARCH_ESP32S2)
       #define MAX_LED_MEMORY 16000
-    #elif defined(ARDUINO_ARCH_ESP32C3)
+    #elif defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32C6)
       #define MAX_LED_MEMORY 32000
     #else
       #define MAX_LED_MEMORY 64000
@@ -597,7 +597,7 @@
 #endif
 
 // Defaults pins, type and counts to configure LED output
-#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(ESP8266) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
   #ifdef WLED_ENABLE_DMX
     #define DEFAULT_LED_PIN 1
     #warning "Compiling with DMX. The default LED pin has been changed to pin 1."
