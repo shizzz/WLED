@@ -1,5 +1,5 @@
 #include "wled.h"
-#include "KlipperMonitor.h"
+#include "include/KlipperMonitor.h"
 
 class KlipperWatchdog : public Usermod {
 private:
