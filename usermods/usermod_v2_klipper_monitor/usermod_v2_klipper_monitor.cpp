@@ -1,5 +1,6 @@
 #include "wled.h"
 #include "include/KlipperMonitor.h"
+#include "include/MonitorMode.h"
 
 class KlipperWatchdog : public Usermod {
 private:
@@ -21,7 +22,7 @@ public:
 
     void loop()
     {
-        monitor.setMode(monitor.PROGRESS);
+        monitor.setMode(PROGRESS);
         monitor.update();
     }
 
@@ -36,13 +37,13 @@ public:
         
         switch (monitor.getDirection()) {
             case 1: // reversed
-                for (int i = 0; i < total * progress / 100; i++) {
+                for (int i = 0; i < total * progress; i++) {
                     strip.setPixelColor(total - 1 - i, color);
                 }
                 break;
                 
             case 2: // center
-                for (int i = 0; i < (total / 2) * progress / 100; i++) {
+                for (int i = 0; i < (total / 2) * progress; i++) {
                     strip.setPixelColor((total / 2) + i, color);
                     strip.setPixelColor((total / 2) - 1 - i, color);
                 }
@@ -50,7 +51,7 @@ public:
                 
             default: // normal
                 for (int i = 0; i < total; i++) {
-                    if (i < total * progress / 100)
+                    if (i < total * progress)
                     {
                         strip.setPixelColor(i, 255, 0, 0, 150);
                     } else {

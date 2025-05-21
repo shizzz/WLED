@@ -1,11 +1,13 @@
 #pragma once
 #include <WiFiClient.h>
 #include <WString.h>
+#include "wled.h"
+#include "include/parser/ResponseParser.h"
+#include "MonitorMode.h"
 
-class KlipperMonitor {
+class KlipperMonitor
+{
 public:
-    enum Mode { NONE, PROGRESS };
-
     void begin(const String& ip, uint16_t port, const String& apiKey = "");
     void update();
     void stop();

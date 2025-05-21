@@ -1,6 +1,4 @@
 #include "KlipperMonitor.h"
-#include "wled.h"
-#include <WString.h>
 
 void KlipperMonitor::begin(const String& ip, uint16_t port, const String& apiKey) {
     this->ip = ip;
@@ -77,19 +75,12 @@ void KlipperMonitor::update() {
 
 void KlipperMonitor::parseResponse(String response)
 {
-    PSRAMDynamicJsonDocument jsonResponse(4096);
-    DeserializationError error = deserializeJson(jsonResponse, response);
-
-    DEBUG_PRINTF("Parse response mode: %d\r\n", mode);
-    DEBUG_PRINTF("Parse response raw: %s\r\n", response.c_str());
-    if (!error)
-    {
-        switch (mode) {
-            case PROGRESS:
-                DEBUG_PRINTF("Parse response json result\r\n");
-                progress = jsonResponse[F("result")][F("status")][F("virtual_sdcard")][F("progress")].as<float>() * 100;
-                DEBUG_PRINTF("Parsed response: %.2f%\r\n");
-                break;
-        }
+    auto parser = createParser(mode);
+    auto result = parser->parse(response.c_str());
+    switch (mode) {
+        case PROGRESS:
+            progress = std::get<float>(result);
+            DEBUG_PRINTF("Parsed progress %.2f%%\r\n", progress);
+            break;
     }
 }
