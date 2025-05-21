@@ -1,5 +1,4 @@
 #pragma once
-#include <WiFiClient.h>
 #include <WString.h>
 #include "wled.h"
 #include "include/parser/ResponseParser.h"
@@ -12,23 +11,23 @@ public:
     void update();
     void stop();
     
-    bool isRunning() const { return state != IDLE; }
+    bool isRunning() const { return _state != IDLE; }
     const String& getLastResponse() const { return lastResponse; }
     
     // Configuration
-    void setEnabled(bool enabled) { this->enabled = enabled; }
-    bool isEnabled() const { return enabled; }
+    void setEnabled(bool enabled) { this->_enabled = enabled; }
+    bool isEnabled() const { return _enabled; }
 
-    void setDirection(uint8_t dir) { direction = dir; }
-    uint8_t getDirection() const { return direction; }
+    void setDirection(uint8_t dir) { _direction = dir; }
+    uint8_t getDirection() const { return _direction; }
 
     float getProgress() { return progress; }
 
     void setMode(Mode new_mode) {
-        mode = new_mode;
+        _mode = new_mode;
         switch (new_mode) {
             case PROGRESS:
-                url = "GET /printer/objects/query?virtual_sdcard HTTP/1.1";
+                _url = "GET /printer/objects/query?virtual_sdcard HTTP/1.1";
                 break;
         }
     }
@@ -37,19 +36,20 @@ private:
     enum RequestState { IDLE, CONNECTING, SENDING, AWAIT_ASYNC, READING };
     void parseResponse(String response);
 
-    WiFiClient client;
+    WiFiClient wifiClient;
+    AsyncClient *client = nullptr;
 
     // Base config
-    bool enabled = false;
-    uint8_t direction = 0; // 0=normal, 1=reversed, 2=center
-    String ip;
-    uint16_t port;
-    String apiKey;
+    bool _enabled = false;
+    uint8_t _direction = 0; // 0=normal, 1=reversed, 2=center
+    String _ip;
+    uint16_t _port;
+    String _apiKey;
 
     // State params
-    RequestState state = IDLE;
-    String url;
-    Mode mode = NONE;
+    RequestState _state = IDLE;
+    String _url;
+    Mode _mode = NONE;
     unsigned long lastRequestTime = 0;
 
     // Results

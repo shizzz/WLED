@@ -1,37 +1,19 @@
-#include "wled.h"
-#include "include/KlipperMonitor.h"
-#include "include/MonitorMode.h"
+#include "usermod_v2_klipper_monitor.h"
 
-class KlipperWatchdog : public Usermod {
-private:
-    KlipperMonitor monitor;
-    bool _enabled = false;
-    uint8_t _direction = 0;
-    String _ip = F("0.0.0.0");
-    uint16_t _port = 80; //7125
-    String _apiKey = "";
-
-public:
-    void setup()
-    {
-    }
-
-    void connected()
-    {
-    }
-
-    void loop()
+    void KlipperWatchdog::loop()
     {
         monitor.setMode(PROGRESS);
         monitor.update();
     }
 
-    void handleOverlayDraw()
+    void KlipperWatchdog::setup() {}
+
+    void KlipperWatchdog::handleOverlayDraw()
     {
         if (!monitor.isEnabled()) return;
         
         float progress = monitor.getProgress();
-        DEBUG_PRINTF("Monitor set progress %.2f%%\r\n", progress);
+        DEBUG_PRINTF("Monitor set progress %.2f%%\r\n", progress * 100);
         uint32_t color = strip.getSegment(0).colors[1];
         int total = strip.getLengthTotal();
         
@@ -51,17 +33,15 @@ public:
                 
             default: // normal
                 for (int i = 0; i < total; i++) {
-                    if (i < total * progress)
+                    if (i >= total * progress)
                     {
-                        strip.setPixelColor(i, 255, 0, 0, 150);
-                    } else {
                         strip.setPixelColor(i, 0, 0, 0, 0);
                     }
                 }
         }
     }
 
-    void addToConfig(JsonObject &root) {
+    void KlipperWatchdog::addToConfig(JsonObject &root) {
         JsonObject top = root.createNestedObject(F("Klipper Monitor"));
         top[F("Enabled")] = _enabled;
         top[F("IP")] = _ip;
@@ -70,7 +50,7 @@ public:
         top[F("Direction")] = 0;
     }
 
-    bool readFromConfig(JsonObject &root) override {
+    bool KlipperWatchdog::readFromConfig(JsonObject &root) {
         JsonObject top = root[F("Klipper Monitor")];
         if (top.isNull()) return false;
 
@@ -92,7 +72,3 @@ public:
         
         return true;
     }
-};
-
-static KlipperWatchdog usermod_v2_klipper_monitor;
-REGISTER_USERMOD(usermod_v2_klipper_monitor);
