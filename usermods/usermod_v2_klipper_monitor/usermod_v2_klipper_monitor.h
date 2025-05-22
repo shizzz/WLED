@@ -19,7 +19,6 @@ private:
     uint16_t _port = 80; //7125
     String _apiKey = "";
 
-    WiFiClient wifiClient;
     AsyncClient *client = nullptr;
 
     // State params
@@ -32,7 +31,6 @@ private:
     unsigned long lastActivityTime = 0;   // Time of last activity of AsyncClient
 
     // Results
-    String lastResponse;
     String response;
     float progress = 0.0f;
 
@@ -41,7 +39,7 @@ private:
     void parseResponse(String response);
     void handleOverlayDraw();
     void update();
-    void stop();
+    void clientStop();
     void changeState(RequestState state) { _state = state; };
 
     // Configuration

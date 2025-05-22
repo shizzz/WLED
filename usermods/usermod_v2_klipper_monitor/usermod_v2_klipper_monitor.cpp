@@ -67,18 +67,18 @@
         return true;
     }
 
-    void KlipperMonitor::stop() {
+    void KlipperMonitor::clientStop() {
         _state = IDLE;
-        wifiClient.stop();
+        //delete client;
+        client->stop();
+        client = nullptr;
     }
 
     void KlipperMonitor::update() {
         // Extra Inactivity check to see if AsyncCLient hangs
         if (client != nullptr && ( millis() - lastActivityTime > inactivityTimeout ) ) {
             DEBUG_PRINTLN(F("Inactivity detected, deleting client."));
-            //delete client;
-            client->stop();
-            client = nullptr;
+            clientStop();
         }
         if (client != nullptr && client->connected()) {
             DEBUG_PRINTLN(F("We are still connected, do nothing"));
@@ -89,9 +89,7 @@
         if (client != nullptr) {
             // Delete previous client instance if exists, just to prevent any memory leaks
             DEBUG_PRINTLN(F("Delete previous instances"));
-            //delete client;
-            client->stop();
-            client = nullptr;
+            clientStop();
         }
 
         DEBUG_PRINTLN(F("Creating new AsyncClient instance."));
@@ -122,9 +120,7 @@
                 KlipperMonitor *instance = static_cast<KlipperMonitor*>(arg);
                 instance->changeState(IDLE);
                 if (instance->client == c) {
-                    //delete instance->client;
-                    instance->client->stop();
-                    instance->client = nullptr;
+                    instance->clientStop();
                 }
             }, this);
             client->onTimeout([](void *arg, AsyncClient *c, uint32_t time) {
@@ -133,9 +129,7 @@
                 KlipperMonitor *instance = static_cast<KlipperMonitor*>(arg);
                 instance->changeState(IDLE);
                 if (instance->client == c) {
-                    //delete instance->client;
-                    instance->client->stop();
-                    instance->client = nullptr;
+                    instance->clientStop();
                 }
             }, this);
             client->onError([](void *arg, AsyncClient *c, int8_t error) {
@@ -146,9 +140,7 @@
                 KlipperMonitor *instance = static_cast<KlipperMonitor*>(arg);
                 instance->changeState(IDLE);
                 if (instance->client == c) {
-                    //delete instance->client;
-                    instance->client->stop();
-                    instance->client = nullptr;
+                    instance->clientStop();
                 }
                 // Do not remove client here, it is maintained by AsyncClient
             }, this);
@@ -170,10 +162,7 @@
             if (!client->connect(_host.c_str(), _port)) {
                 DEBUG_PRINTLN(F("Failed to initiate connection."));
                 // Connection failed, so cleanup
-                //delete client;
-                changeState(IDLE);
-                client->stop();
-                client = nullptr;
+                clientStop();
             } else {
                 // Connection successfull, wait for callbacks to go on.
                 DEBUG_PRINTLN(F("Connection initiated, awaiting response..."));
