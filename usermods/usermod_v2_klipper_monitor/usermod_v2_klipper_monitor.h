@@ -5,13 +5,17 @@
 
 class KlipperMonitor : public Usermod {
 private:
-    // Constants
+    // Define constants
     enum RequestState { IDLE, CONNECTING, SENDING, AWAIT_ASYNC, READING };
+    static const uint8_t lockId = USERMOD_ID_KLIPPER_MONITOR;
+    static const int16_t ackTimeout = 9000;  // ACK timeout in milliseconds when doing the URL request
+    static const uint16_t rxTimeout = 9000;  // RX timeout in milliseconds when doing the URL request
+    static const unsigned long inactivityTimeout = 30000; // When the AsyncClient is inactive (hanging) for this many milliseconds, we kill it
 
     // Settings
     bool _enabled = false;
     uint8_t _direction = 0;
-    String _ip = F("0.0.0.0");
+    String _host = F("0.0.0.0");
     uint16_t _port = 80; //7125
     String _apiKey = "";
 
@@ -22,7 +26,10 @@ private:
     RequestState _state = IDLE;
     String _url;
     Mode _mode = NONE;
+    uint16_t checkInterval = 5;
     unsigned long lastRequestTime = 0;
+    unsigned long lastCheck = 0;          // Timestamp of last check
+    unsigned long lastActivityTime = 0;   // Time of last activity of AsyncClient
 
     // Results
     String lastResponse;
@@ -30,17 +37,19 @@ private:
     float progress = 0.0f;
 
     // Methods
+    void onClientConnect(AsyncClient *c);
     void parseResponse(String response);
     void handleOverlayDraw();
     void update();
     void stop();
+    void changeState(RequestState state) { _state = state; };
 
     // Configuration
     void setMode(Mode new_mode) {
         _mode = new_mode;
         switch (new_mode) {
             case PROGRESS:
-                _url = "GET /printer/objects/query?virtual_sdcard HTTP/1.1";
+                _url = "/printer/objects/query?virtual_sdcard";
                 break;
         }
     }
