@@ -38,6 +38,7 @@
     void KlipperMonitor::addToConfig(JsonObject &root) {
         JsonObject top = root.createNestedObject(FPSTR(_name));
         top[F("enabled")] = _enabled;
+        top[F("selected")] = userVar0;
         top[F("host")] = _host;
         top[F("port")] = _port;
         top[F("API Key")] = _apiKey;
@@ -60,6 +61,11 @@
     
     void KlipperMonitor::appendConfigData() {
         int effectsCount = sizeof(EffectStrings) / sizeof(EffectStrings[0]);
+        oappend(F("dd=addDropdown('Klipper Monitor','selected');"));
+        for (int i = 0; i < PRESET_COUNT; i++)
+        {
+            oappend(F("addOption(dd,'")); oappend(_presetSettings[i].name); oappend(F("',")); oappend(i + 1); oappend(F(");"));
+        } 
         for (int i = 0; i < PRESET_COUNT; i++)
         {
             oappend(F("td=addDropdown('Klipper Monitor:")); oappend(_presetSettings[i].name); oappend(F("','effect');"));
@@ -72,12 +78,13 @@
 
     bool KlipperMonitor::readFromConfig(JsonObject &root) {
         JsonObject top = root[FPSTR(_name)];
-        if (top.isNull()) return false;
+        bool configComplete = !top.isNull();
 
-        _enabled = top[F("enabled")].as<bool>();
-        _host = top[F("host")].as<String>();
-        _port = top[F("port")].as<uint16_t>();
-        _apiKey = top[F("API Key")].as<String>();
+        configComplete &= getJsonValue(top[F("enabled")], _enabled);
+        configComplete &= getJsonValue(top[F("selected")], userVar0);
+        configComplete &= getJsonValue(top[F("host")], _host);
+        configComplete &= getJsonValue(top[F("port")], _port, 80);
+        configComplete &= getJsonValue(top[F("API Key")], _apiKey);
             
         uint8_t hw = strip.getBrightness();
         unsigned int maxPixel = strip.getLengthTotal();
@@ -85,18 +92,22 @@
         for (int i = 0; i < PRESET_COUNT; i++)
         {
             JsonObject jsonSetting = top[_presetSettings[i].name];
-            getJsonValue(jsonSetting[F("effect")], _presetSettings[i].effect, NORMAL);
-            getJsonValue(jsonSetting[F("clean stripe")], _presetSettings[i].cleanStripe, false);
-            getJsonValue(jsonSetting[F("entity")], _presetSettings[i].entity);
-            _presetSettings[i].startPixel = checkPixelSetting(jsonSetting[F("start pixel")].as<unsigned int>() | 1);
-            _presetSettings[i].endPixel = checkPixelSetting(jsonSetting[F("end pixel")].as<unsigned int>() | maxPixel);
-            _presetSettings[i].color = {
-                checkColorSetting(jsonSetting[F("red")].as<Effect>()),
-                checkColorSetting(jsonSetting[F("green")].as<Effect>()),
-                checkColorSetting(jsonSetting[F("blue")].as<Effect>())
-            };
-
+            _presetSettings[i].color = {};
+            configComplete &= getJsonValue(jsonSetting[F("effect")], _presetSettings[i].effect, NORMAL);
+            configComplete &= getJsonValue(jsonSetting[F("clean stripe")], _presetSettings[i].cleanStripe, false);
+            configComplete &= getJsonValue(jsonSetting[F("entity")], _presetSettings[i].entity);
+            configComplete &= getJsonValue(jsonSetting[F("start pixel")], _presetSettings[i].startPixel, 1);
+            configComplete &= getJsonValue(jsonSetting[F("end pixel")], _presetSettings[i].endPixel, maxPixel);
+            configComplete &= getJsonValue(jsonSetting[F("red")], _presetSettings[i].color.red, 255);
+            configComplete &= getJsonValue(jsonSetting[F("green")], _presetSettings[i].color.green, 0);
+            configComplete &= getJsonValue(jsonSetting[F("blue")], _presetSettings[i].color.blue, 0);
+            
             _presetSettings[i].maxBrightness = hw;
+            _presetSettings[i].startPixel = checkPixelSetting(_presetSettings[i].startPixel);
+            _presetSettings[i].endPixel = checkPixelSetting(_presetSettings[i].endPixel);
+            _presetSettings[i].color.red = checkColorSetting(_presetSettings[i].color.red);
+            _presetSettings[i].color.green = checkColorSetting(_presetSettings[i].color.green);
+            _presetSettings[i].color.blue = checkColorSetting(_presetSettings[i].color.blue);
             if (_presetSettings[i].color.red == 0 && _presetSettings[i].color.green == 0 && _presetSettings[i].color.blue == 0)
             {
                 _presetSettings[i].useExistingColor;
@@ -108,11 +119,11 @@
             _enabled = false;
         }
         
-        return true;
+        return configComplete;
     }
 
     void KlipperMonitor::clientStop() {
-        _state = IDLE;
+        changeState(IDLE);
         if (client != nullptr) {
             delete client;
         }
@@ -129,19 +140,19 @@
         }
         if (client != nullptr && client->connected()) {
             DEBUG_PRINTLN(F("We are still connected, do nothing"));
-            // Do nothing, Client is still connected
             return;
         }
 
+        changeState(AWAIT_ASYNC);
+
         if (client != nullptr) {
-            // Delete previous client instance if exists, just to prevent any memory leaks
             DEBUG_PRINTLN(F("Delete previous instances"));
             clientStop();
         }
 
         DEBUG_PRINTLN(F("Creating new AsyncClient instance."));
         client = new AsyncClient();
-        changeState(AWAIT_ASYNC);
+
         if(client) {
             client->onData([](void *arg, AsyncClient *c, void *data, size_t len) {
                 DEBUG_PRINTLN(F("Data received."));
@@ -231,14 +242,14 @@
             return;
         }
 
+        DEBUG_PRINTLN("Response: ");
+        DEBUG_PRINTLN(response.c_str());
+
         // Search for two linebreaks between headers and content
         int bodyPos = response.indexOf("\r\n\r\n");
         if (bodyPos > 0) {
             String jsonStr = response.substring(bodyPos + 4); // +4 Skip the two CRLFs
             jsonStr.trim();
-
-            DEBUG_PRINTLN("Response: ");
-            DEBUG_PRINTLN(jsonStr);
 
             // Check for valid JSON, otherwise we brick the program runtime
             if (jsonStr[0] == '{' || jsonStr[0] == '[') {
@@ -260,6 +271,7 @@
     void KlipperMonitor::onClientConnect(AsyncClient *c) {
         DEBUG_PRINT(F("Client connected: "));
         DEBUG_PRINTLN(c->connected() ? F("Yes") : F("No"));
+        changeState(SENDING);
 
         if (c->connected()) {
             String request = "GET " + _url + " HTTP/1.1\r\n"

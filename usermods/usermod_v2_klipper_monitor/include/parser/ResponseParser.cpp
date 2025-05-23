@@ -53,7 +53,7 @@ ParseResult HeaterResponseParser::parse(const std::string& data, const std::stri
         DEBUG_PRINTLN(F("Json deserealization failed"));
         return { 0, 0, 0 }; 
     }
-    DEBUG_PRINTF("Parse %s \r\n", data.c_str());
+    
     float state = jsonResponse[F("result")][F("status")][entity.c_str()][F("temperature")].as<float>();
     float target = jsonResponse[F("result")][F("status")][entity.c_str()][F("target")].as<float>();
     float progress;
