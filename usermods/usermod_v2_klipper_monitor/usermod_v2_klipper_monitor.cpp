@@ -1,63 +1,107 @@
 #include "usermod_v2_klipper_monitor.h"
-    void KlipperMonitor::setup() {}
+    const char KlipperMonitor::_name[] PROGMEM = "Klipper Monitor";
+
+    void KlipperMonitor::setup()
+    {
+        _initDone = true;
+    }
+
     void KlipperMonitor::loop()
     {
-        setMode(PROGRESS);
+        setActivePreset(userVar0);
 
-        if (!_enabled || _mode == NONE || _state != IDLE) { return; }
-        if (millis() - lastCheck >= checkInterval * 1000) { update(); }
+        if (!_enabled || _state != IDLE) { return; }
+        if (millis() - lastCheck >= checkInterval * 1000)
+        { 
+            update(); 
+            lastCheck = millis();
+        }
+    }
+
+    void KlipperMonitor::setActivePreset(uint8_t preset)
+    {       
+        preset = preset - 1;
+        if (preset < 0 || preset > maxPresetNumber) { return; }
+        _activePreset = _presetSettings[preset];
+        _url = "/printer/objects/query?";
+        _url += _activePreset.entity;
     }
 
     void KlipperMonitor::handleOverlayDraw()
     {
         if (!_enabled) return;
         
-        DEBUG_PRINTF("Monitor set progress %.2f%%\r\n", progress * 100);
-        uint32_t color = strip.getSegment(0).colors[1];
-        int total = strip.getLengthTotal();
-        
-        switch (_direction) {
-            case 1: // reversed
-                for (int i = 0; i < total * progress; i++) {
-                    strip.setPixelColor(total - 1 - i, color);
-                }
-                break;
-                
-            case 2: // center
-                for (int i = 0; i < (total / 2) * progress; i++) {
-                    strip.setPixelColor((total / 2) + i, color);
-                    strip.setPixelColor((total / 2) - 1 - i, color);
-                }
-                break;
-                
-            default: // normal
-                for (int i = 0; i < total; i++) {
-                    if (i >= total * progress)
-                    {
-                        strip.setPixelColor(i, 0, 0, 0, 0);
-                    }
-                }
-        }
+        auto painter = createPainter(_activePreset.effect);
+        painter->paint(_activePreset, _parseResult);
     }
 
     void KlipperMonitor::addToConfig(JsonObject &root) {
-        JsonObject top = root.createNestedObject(F("Klipper Monitor"));
-        top[F("Enabled")] = _enabled;
-        top[F("Host")] = _host;
-        top[F("Port")] = _port;
+        JsonObject top = root.createNestedObject(FPSTR(_name));
+        top[F("enabled")] = _enabled;
+        top[F("host")] = _host;
+        top[F("port")] = _port;
         top[F("API Key")] = _apiKey;
-        top[F("Direction")] = 0;
+
+        for (int i = 0; i < PRESET_COUNT; i++)
+        {
+            JsonObject modeJson = top.createNestedObject(_presetSettings[i].name);
+            modeJson[F("entity")] = _presetSettings[i].entity;
+            modeJson[F("effect")] = _presetSettings[i].effect;
+            modeJson[F("start pixel")] = _presetSettings[i].startPixel;
+            modeJson[F("end pixel")] = _presetSettings[i].endPixel;
+            modeJson[F("clean stripe")] = _presetSettings[i].cleanStripe;
+
+            JsonObject colorJson = modeJson.createNestedObject(F("color"));
+            colorJson[F("red")] = _presetSettings[i].color.red;
+            colorJson[F("green")] = _presetSettings[i].color.green;
+            colorJson[F("blue")] = _presetSettings[i].color.blue;
+        }
+    }
+    
+    void KlipperMonitor::appendConfigData() {
+        int effectsCount = sizeof(EffectStrings) / sizeof(EffectStrings[0]);
+        for (int i = 0; i < PRESET_COUNT; i++)
+        {
+            oappend(F("td=addDropdown('Klipper Monitor:")); oappend(_presetSettings[i].name); oappend(F("','effect');"));
+            for (int effect = 0; effect < effectsCount; effect++)
+            {
+                oappend(F("addOption(td,'")); oappend(EffectStrings[effect]); oappend(F("',")); oappend(effect); oappend(F(");"));
+            }  
+        } 
     }
 
     bool KlipperMonitor::readFromConfig(JsonObject &root) {
-        JsonObject top = root[F("Klipper Monitor")];
+        JsonObject top = root[FPSTR(_name)];
         if (top.isNull()) return false;
 
-        _enabled = top[F("Enabled")].as<bool>() | false;
-        _host = top[F("Host")].as<String>();
-        _port = top[F("Port")].as<uint16_t>();
+        _enabled = top[F("enabled")].as<bool>();
+        _host = top[F("host")].as<String>();
+        _port = top[F("port")].as<uint16_t>();
         _apiKey = top[F("API Key")].as<String>();
-        _direction = top[F("Direction")] | 0;
+            
+        uint8_t hw = strip.getBrightness();
+        unsigned int maxPixel = strip.getLengthTotal();
+
+        for (int i = 0; i < PRESET_COUNT; i++)
+        {
+            JsonObject jsonSetting = top[_presetSettings[i].name];
+            getJsonValue(jsonSetting[F("effect")], _presetSettings[i].effect, NORMAL);
+            getJsonValue(jsonSetting[F("clean stripe")], _presetSettings[i].cleanStripe, false);
+            getJsonValue(jsonSetting[F("entity")], _presetSettings[i].entity);
+            _presetSettings[i].startPixel = checkPixelSetting(jsonSetting[F("start pixel")].as<unsigned int>() | 1);
+            _presetSettings[i].endPixel = checkPixelSetting(jsonSetting[F("end pixel")].as<unsigned int>() | maxPixel);
+            _presetSettings[i].color = {
+                checkColorSetting(jsonSetting[F("red")].as<Effect>()),
+                checkColorSetting(jsonSetting[F("green")].as<Effect>()),
+                checkColorSetting(jsonSetting[F("blue")].as<Effect>())
+            };
+
+            _presetSettings[i].maxBrightness = hw;
+            if (_presetSettings[i].color.red == 0 && _presetSettings[i].color.green == 0 && _presetSettings[i].color.blue == 0)
+            {
+                _presetSettings[i].useExistingColor;
+            }
+        }
 
         if (_host == "0.0.0.0" || _host.isEmpty() || _host == "null" || _host == nullptr)
         {
@@ -69,6 +113,9 @@
 
     void KlipperMonitor::clientStop() {
         _state = IDLE;
+        if (client != nullptr) {
+            delete client;
+        }
         //delete client;
         client->stop();
         client = nullptr;
@@ -195,14 +242,8 @@
 
             // Check for valid JSON, otherwise we brick the program runtime
             if (jsonStr[0] == '{' || jsonStr[0] == '[') {
-                auto parser = createParser(_mode);
-                auto result = parser->parse(response.c_str());
-                switch (_mode) {
-                    case PROGRESS:
-                        progress = std::get<float>(result);
-                        DEBUG_PRINTF("Parsed progress %.2f%%\r\n", progress);
-                        break;
-                }
+                auto parser = createParser(_activePreset.type);
+                _parseResult = parser->parse(jsonStr.c_str(), _activePreset.entity.c_str());
             } else {
                 DEBUG_PRINTLN(F("Invalid JSON response"));
             }
@@ -237,4 +278,59 @@
                 DEBUG_PRINTLN(bytesSent );
             }
         }
+    }
+
+    uint8_t KlipperMonitor::checkColorSetting(uint8_t color)
+    {
+        if (color < 0)
+        {
+            return 0;
+        }
+        if (color > 255)
+        {
+            return 255;
+        }
+        return color;
+    }
+
+    unsigned int KlipperMonitor::checkPixelSetting(unsigned int pixel)
+    {
+        if (pixel < 0) {
+            return 0;
+        } 
+        if (pixel > strip.getLengthTotal())
+        {
+            return strip.getLengthTotal();
+        }
+
+        return pixel;
+    }
+
+
+    /*
+     * addToJsonState() can be used to add custom entries to the /json/state part of the JSON API (state object).
+     * Values in the state object may be modified by connected clients
+     */
+    void KlipperMonitor::addToJsonState(JsonObject& root)
+    {
+      if (!_initDone || !_enabled) return;  // prevent crash on boot applyPreset()
+
+      JsonObject usermod = root[FPSTR(_name)];
+      if (usermod.isNull()) usermod = root.createNestedObject(FPSTR(_name));
+      usermod["user0"] = userVar0;
+    }
+
+
+    /*
+     * readFromJsonState() can be used to receive data clients send to the /json/state part of the JSON API (state object).
+     * Values in the state object may be modified by connected clients
+     */
+    void KlipperMonitor::readFromJsonState(JsonObject& root)
+    {
+      if (!_initDone) return;
+
+      JsonObject usermod = root[FPSTR(_name)];
+      if (!usermod.isNull()) {
+        userVar0 = usermod["user0"] | userVar0;
+      }
     }

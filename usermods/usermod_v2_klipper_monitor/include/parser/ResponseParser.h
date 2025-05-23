@@ -2,17 +2,28 @@
 #include <memory>
 #include <variant>
 #include <string>
-#include "../MonitorMode.h"
-
-// Result type for parsing
-using ParseResult = std::variant<float, std::string>;
+#include "../MonitorTypes.h"
 
 // Abstract base class for response parsers
 class ResponseParser {
 public:
     virtual ~ResponseParser() = default;
-    virtual ParseResult parse(const std::string& str) = 0;
+    virtual ParseResult parse(const std::string& data, const std::string& entity) = 0;
+};
+
+// Progress parser implementation
+class ProgressResponseParser : public ResponseParser {
+public:
+    explicit ProgressResponseParser();
+    ParseResult parse(const std::string& data, const std::string& entity) override;
+};
+
+// Progress parser implementation
+class HeaterResponseParser : public ResponseParser {
+public:
+    explicit HeaterResponseParser();
+    ParseResult parse(const std::string& data, const std::string& entity) override;
 };
 
 // Factory function declaration
-std::unique_ptr<ResponseParser> createParser(Mode mode);
+std::unique_ptr<ResponseParser> createParser(Type type);

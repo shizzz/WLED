@@ -1,11 +1,20 @@
 #include <WString.h>
 #include "wled.h"
 #include "include/parser/ResponseParser.h"
-#include "MonitorMode.h"
+#include "include/painter/Painter.h"
+#include "MonitorTypes.h"
+
+#ifndef PRESETS
+  #define PRESETS { { "PROGRESS", PROGRESS, "virtual_sdcard", NORMAL }, { "EXTRUDER", HEATER, "extruder", NORMAL }, { "HEATER_BED", HEATER, "heater_bed", NORMAL } }
+#endif
+#ifndef PRESET_COUNT
+  #define PRESET_COUNT 3
+#endif
 
 class KlipperMonitor : public Usermod {
 private:
     // Define constants
+    static const char _name[];
     enum RequestState { IDLE, CONNECTING, SENDING, AWAIT_ASYNC, READING };
     static const uint8_t lockId = USERMOD_ID_KLIPPER_MONITOR;
     static const int16_t ackTimeout = 9000;  // ACK timeout in milliseconds when doing the URL request
@@ -14,7 +23,7 @@ private:
 
     // Settings
     bool _enabled = false;
-    uint8_t _direction = 0;
+    Effect _direction = NORMAL;
     String _host = F("0.0.0.0");
     uint16_t _port = 80; //7125
     String _apiKey = "";
@@ -22,17 +31,19 @@ private:
     AsyncClient *client = nullptr;
 
     // State params
+    bool _initDone = false;
     RequestState _state = IDLE;
     String _url;
-    Mode _mode = NONE;
     uint16_t checkInterval = 5;
+    size_t maxPresetNumber = PRESET_COUNT - 1;
     unsigned long lastRequestTime = 0;
     unsigned long lastCheck = 0;          // Timestamp of last check
     unsigned long lastActivityTime = 0;   // Time of last activity of AsyncClient
+    PresetSettings _presetSettings[PRESET_COUNT] = PRESETS;
+    PresetSettings _activePreset;
 
     // Results
-    String response;
-    float progress = 0.0f;
+    ParseResult _parseResult;
 
     // Methods
     void onClientConnect(AsyncClient *c);
@@ -41,22 +52,20 @@ private:
     void update();
     void clientStop();
     void changeState(RequestState state) { _state = state; };
+    static uint8_t checkColorSetting(uint8_t color);
+    static unsigned int checkPixelSetting(unsigned int pixel);
 
     // Configuration
-    void setMode(Mode new_mode) {
-        _mode = new_mode;
-        switch (new_mode) {
-            case PROGRESS:
-                _url = "/printer/objects/query?virtual_sdcard";
-                break;
-        }
-    }
+    void setActivePreset(uint8_t preset);
 public:
   // Base overloads
-  void setup();
-  void loop();
-  bool readFromConfig(JsonObject& root);
-  void addToConfig(JsonObject& root);
+  void setup() override;
+  void loop() override;
+  bool readFromConfig(JsonObject& root) override;
+  void addToConfig(JsonObject& root) override;
+  void appendConfigData() override;
+  void addToJsonState(JsonObject& root) override;
+  void readFromJsonState(JsonObject& root) override;
   uint16_t getId() { return USERMOD_ID_KLIPPER_MONITOR; }
   inline void enable(bool enable) { _enabled = enable; }
   inline bool isEnabled() { return _enabled; }
