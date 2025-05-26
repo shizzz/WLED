@@ -8,21 +8,21 @@
 class ResponseParser {
 public:
     virtual ~ResponseParser() = default;
-    virtual ParseResult parse(const std::string& data, const std::string& entity) = 0;
+    virtual void parse(const std::string& data, PresetSettings* _preset) = 0;
 };
 
 // Progress parser implementation
 class ProgressResponseParser : public ResponseParser {
 public:
     explicit ProgressResponseParser();
-    ParseResult parse(const std::string& data, const std::string& entity) override;
+    void parse(const std::string& data, PresetSettings* _preset) override;
 };
 
 // Progress parser implementation
 class HeaterResponseParser : public ResponseParser {
 public:
     explicit HeaterResponseParser();
-    ParseResult parse(const std::string& data, const std::string& entity) override;
+    void parse(const std::string& data, PresetSettings* _preset) override;
 };
 
 // Factory function declaration

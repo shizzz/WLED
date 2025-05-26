@@ -17,7 +17,7 @@ std::unique_ptr<ResponseParser> createParser(Type type) {
     }
 }
 
-ParseResult ProgressResponseParser::parse(const std::string& data, const std::string& entity) {
+void ProgressResponseParser::parse(const std::string& data, PresetSettings* _preset) {
     DEBUG_PRINTLN(F("Progress parser begin"));
     DEBUG_PRINTLN(data.c_str());
 
@@ -27,9 +27,9 @@ ParseResult ProgressResponseParser::parse(const std::string& data, const std::st
     if (error) 
     { 
         DEBUG_PRINTLN(F("Json deserealization failed"));
-        return { 0, 0, 0 }; 
+        _preset->result = { 0, 0, 0 }; 
     }
-    float progress = jsonResponse[F("result")][F("status")][entity.c_str()][F("progress")].as<float>();
+    float progress = jsonResponse[F("result")][F("status")][_preset->entity.c_str()][F("progress")].as<float>();
     DEBUG_PRINTF("GOT %s state \r\n", entity.c_str());
     DEBUG_PRINTF("progress: %.3f%\r\n", progress);
 
@@ -39,10 +39,10 @@ ParseResult ProgressResponseParser::parse(const std::string& data, const std::st
         0
     };
     
-    return result;
+    _preset->result = result;
 }
 
-ParseResult HeaterResponseParser::parse(const std::string& data, const std::string& entity) {
+void HeaterResponseParser::parse(const std::string& data, PresetSettings* _preset) {
     DEBUG_PRINTLN(F("Heater parser begin"));
     DEBUG_PRINTLN(data.c_str());
     PSRAMDynamicJsonDocument jsonResponse(4096);
@@ -51,14 +51,14 @@ ParseResult HeaterResponseParser::parse(const std::string& data, const std::stri
     if (error) 
     { 
         DEBUG_PRINTLN(F("Json deserealization failed"));
-        return { 0, 0, 0 }; 
+        _preset->result = { 0, 0, 0 }; 
     }
     
-    float state = jsonResponse[F("result")][F("status")][entity.c_str()][F("temperature")].as<float>();
-    float target = jsonResponse[F("result")][F("status")][entity.c_str()][F("target")].as<float>();
+    float state = jsonResponse[F("result")][F("status")][_preset->entity.c_str()][F("temperature")].as<float>();
+    float target = jsonResponse[F("result")][F("status")][_preset->entity.c_str()][F("target")].as<float>();
     float progress;
 
-    DEBUG_PRINTF("GOT %s state \r\n", entity.c_str());
+    DEBUG_PRINTF("GOT %s state \r\n", _preset->entity.c_str());
     DEBUG_PRINTF("state: %.3f%\r\n", state);
     DEBUG_PRINTF("target: %.3f%\r\n", target);
 
@@ -70,11 +70,9 @@ ParseResult HeaterResponseParser::parse(const std::string& data, const std::stri
     }
     DEBUG_PRINTF("progress: %.3f%\r\n", progress);
 
-    ParseResult result {
+    _preset->result = {
         progress,
         0,
         0
     };
-    
-    return result;
 }

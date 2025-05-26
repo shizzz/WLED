@@ -1,15 +1,31 @@
+#pragma once
 #include <WString.h>
 #include "wled.h"
 #include "include/parser/ResponseParser.h"
 #include "include/painter/Painter.h"
 #include "MonitorTypes.h"
+#include "QueueManager.h"
+
+#ifndef PROGRESS_PRESET
+  #define PROGRESS_PRESET { "PROGRESS", PROGRESS, "virtual_sdcard", NORMAL }
+#endif
+
+#ifndef EXTRUDER_HEATER_PRESET
+  #define EXTRUDER_HEATER_PRESET { "EXTRUDER", HEATER, "extruder", NORMAL }
+#endif
+
+#ifndef BED_HEATER_PRESET
+  #define BED_HEATER_PRESET { "HEATER_BED", HEATER, "heater_bed", NORMAL }
+#endif
 
 #ifndef PRESETS
-  #define PRESETS { { "PROGRESS", PROGRESS, "virtual_sdcard", NORMAL }, { "EXTRUDER", HEATER, "extruder", NORMAL }, { "HEATER_BED", HEATER, "heater_bed", NORMAL } }
+  #define PRESETS { PROGRESS_PRESET, EXTRUDER_HEATER_PRESET, BED_HEATER_PRESET }
 #endif
 #ifndef PRESET_COUNT
   #define PRESET_COUNT 3
 #endif
+
+class QueueManager; 
 
 class KlipperMonitor : public Usermod {
 private:
@@ -23,12 +39,14 @@ private:
 
     // Settings
     bool _enabled = false;
+    bool _automaticSwitch = false;
     Effect _direction = NORMAL;
     String _host = F("0.0.0.0");
     uint16_t _port = 80; //7125
     String _apiKey = "";
 
     AsyncClient *client = nullptr;
+    QueueManager *_queueManager = nullptr;
 
     // State params
     bool _initDone = false;
@@ -40,7 +58,6 @@ private:
     unsigned long lastCheck = 0;          // Timestamp of last check
     unsigned long lastActivityTime = 0;   // Time of last activity of AsyncClient
     PresetSettings _presetSettings[PRESET_COUNT] = PRESETS;
-    PresetSettings _activePreset;
 
     // Results
     ParseResult _parseResult;
@@ -54,9 +71,6 @@ private:
     void changeState(RequestState state) { _state = state; };
     static uint8_t checkColorSetting(uint8_t color);
     static unsigned int checkPixelSetting(unsigned int pixel);
-
-    // Configuration
-    void setActivePreset(uint8_t preset);
 public:
   // Base overloads
   void setup() override;
@@ -81,6 +95,10 @@ public:
       // Now it is safe to delete the client.
       delete client; // This is safe even if client is nullptr.
       client = nullptr;
+    }
+
+    if (_queueManager) {
+      _queueManager = nullptr;
     }
   }
 };

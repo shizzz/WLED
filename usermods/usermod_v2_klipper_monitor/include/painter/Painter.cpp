@@ -23,31 +23,31 @@ std::unique_ptr<Painter> createPainter(Effect effect) {
     }
 }
 
-void Painter::doPaintLinear(const PresetSettings& settings, unsigned int n, bool toPaint)
+void Painter::doPaintLinear(const PresetSettings* settings, unsigned int n, bool toPaint)
 {
-    if (settings.cleanStripe)
+    if (settings->cleanStripe)
     {
         if (!toPaint)
         {
             strip.setPixelColor(n, 0, 0, 0, 0);
         } else {
-            if (!settings.useExistingColor) {
-                strip.setPixelColor(n, settings.color.red, settings.color.green, settings.color.blue);
+            if (!settings->useExistingColor) {
+                strip.setPixelColor(n, settings->color.red, settings->color.green, settings->color.blue);
             }
         }
     } else {
         if (toPaint)
         {
-            strip.setPixelColor(n, settings.color.red, settings.color.green, settings.color.blue);
+            strip.setPixelColor(n, settings->color.red, settings->color.green, settings->color.blue);
         }
     }
 }
 
-void NormalPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    unsigned int total = settings.startPixel - settings.endPixel + 1;
+void NormalPainter::paint(const PresetSettings* settings, const ParseResult& parseResult) {
+    unsigned int total = settings->startPixel - settings->endPixel + 1;
     bool toPaint = false;
 
-    for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++) {
+    for (unsigned int i = settings->startPixel; i <= settings->endPixel; i++) {
         toPaint = i < total * parseResult.progress;
         doPaintLinear(settings, i, toPaint);
     }
@@ -55,11 +55,11 @@ void NormalPainter::paint(const PresetSettings& settings, const ParseResult& par
     return;
 }
 
-void ReversedPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    unsigned int total = settings.startPixel - settings.endPixel + 1;
+void ReversedPainter::paint(const PresetSettings* settings, const ParseResult& parseResult) {
+    unsigned int total = settings->startPixel - settings->endPixel + 1;
     bool toPaint = false;
 
-    for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++) {
+    for (unsigned int i = settings->startPixel; i <= settings->endPixel; i++) {
         toPaint = i > total * parseResult.progress;
         doPaintLinear(settings, i, toPaint);
     }
@@ -67,15 +67,15 @@ void ReversedPainter::paint(const PresetSettings& settings, const ParseResult& p
     return;
 }
 
-void CenterPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    unsigned int total = settings.startPixel - settings.endPixel + 1;
+void CenterPainter::paint(const PresetSettings* settings, const ParseResult& parseResult) {
+    unsigned int total = settings->startPixel - settings->endPixel + 1;
     unsigned int pixelsToPaint = total * parseResult.progress;
-    unsigned int centerPixel = settings.startPixel + total / 2;
+    unsigned int centerPixel = settings->startPixel + total / 2;
     unsigned int borderLeft = centerPixel - pixelsToPaint;
     unsigned int borderRight = centerPixel - pixelsToPaint;
     bool toPaint = false;
 
-    for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++)
+    for (unsigned int i = settings->startPixel; i <= settings->endPixel; i++)
     {
         toPaint = (pixelsToPaint >= 1) && (i > borderLeft || i < borderRight);
         doPaintLinear(settings, i, toPaint);
@@ -84,9 +84,9 @@ void CenterPainter::paint(const PresetSettings& settings, const ParseResult& par
     return;
 }
 
-void BrightressPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    uint8_t newBrigtness = settings.maxBrightness * parseResult.progress;
-    for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++)
+void BrightressPainter::paint(const PresetSettings* settings, const ParseResult& parseResult) {
+    uint8_t newBrigtness = settings->maxBrightness * parseResult.progress;
+    for (unsigned int i = settings->startPixel; i <= settings->endPixel; i++)
     {
         strip.setBrightness(newBrigtness, true);
     }

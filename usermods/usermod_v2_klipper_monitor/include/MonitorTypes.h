@@ -35,11 +35,18 @@ static const char* EffectStrings[] =
     "BRIGHTNESS"
 };
 
+typedef struct result_t {
+    float progress;
+    uint8_t x;
+    uint8_t y;
+} ParseResult;
+
 typedef struct settings_t {
     String name;
     Type type;
     String entity;
     Effect effect;
+    bool active;
     struct color_t {
         uint8_t red;
         uint8_t green;
@@ -50,10 +57,8 @@ typedef struct settings_t {
     unsigned int startPixel;
     unsigned int endPixel;
     bool cleanStripe;
+    String url;
+    ParseResult result;
+    unsigned long lastActivity;
+    uint8_t weight;
 } PresetSettings;
-
-typedef struct result_t {
-    float progress;
-    uint8_t x;
-    uint8_t y;
-} ParseResult;
