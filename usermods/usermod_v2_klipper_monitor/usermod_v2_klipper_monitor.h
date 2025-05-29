@@ -23,6 +23,7 @@ private:
 
     // Settings
     bool _enabled = false;
+    bool _active = false;
     Effect _direction = NORMAL;
     String _host = F("0.0.0.0");
     uint16_t _port = 80; //7125

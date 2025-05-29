@@ -21,15 +21,20 @@
     void KlipperMonitor::setActivePreset(uint8_t preset)
     {       
         preset = preset - 1;
-        if (preset < 0 || preset > maxPresetNumber) { return; }
+        if (preset < 0 || preset > maxPresetNumber)
+        {
+            _active = false;
+            return;
+        }
         _activePreset = _presetSettings[preset];
         _url = "/printer/objects/query?";
         _url += _activePreset.entity;
+        _active = true;
     }
 
     void KlipperMonitor::handleOverlayDraw()
     {
-        if (!_enabled) return;
+        if (!_enabled || !_active) return;
         
         auto painter = createPainter(_activePreset.effect);
         painter->paint(_activePreset, _parseResult);
@@ -62,6 +67,7 @@
     void KlipperMonitor::appendConfigData() {
         int effectsCount = sizeof(EffectStrings) / sizeof(EffectStrings[0]);
         oappend(F("dd=addDropdown('Klipper Monitor','selected');"));
+        oappend(F("addOption(dd,'None',0);"));
         for (int i = 0; i < PRESET_COUNT; i++)
         {
             oappend(F("addOption(dd,'")); oappend(_presetSettings[i].name); oappend(F("',")); oappend(i + 1); oappend(F(");"));
@@ -87,7 +93,6 @@
         configComplete &= getJsonValue(top[F("API Key")], _apiKey);
             
         uint8_t hw = strip.getBrightness();
-        unsigned int maxPixel = strip.getLengthTotal();
 
         for (int i = 0; i < PRESET_COUNT; i++)
         {
@@ -97,7 +102,7 @@
             configComplete &= getJsonValue(jsonSetting[F("clean stripe")], _presetSettings[i].cleanStripe, false);
             configComplete &= getJsonValue(jsonSetting[F("entity")], _presetSettings[i].entity);
             configComplete &= getJsonValue(jsonSetting[F("start pixel")], _presetSettings[i].startPixel, 1);
-            configComplete &= getJsonValue(jsonSetting[F("end pixel")], _presetSettings[i].endPixel, maxPixel);
+            configComplete &= getJsonValue(jsonSetting[F("end pixel")], _presetSettings[i].endPixel);
             configComplete &= getJsonValue(jsonSetting[F("red")], _presetSettings[i].color.red, 255);
             configComplete &= getJsonValue(jsonSetting[F("green")], _presetSettings[i].color.green, 0);
             configComplete &= getJsonValue(jsonSetting[F("blue")], _presetSettings[i].color.blue, 0);
@@ -310,10 +315,6 @@
         if (pixel < 0) {
             return 0;
         } 
-        if (pixel > strip.getLengthTotal())
-        {
-            return strip.getLengthTotal();
-        }
 
         return pixel;
     }

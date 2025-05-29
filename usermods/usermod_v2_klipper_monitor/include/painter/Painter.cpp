@@ -44,11 +44,11 @@ void Painter::doPaintLinear(const PresetSettings& settings, unsigned int n, bool
 }
 
 void NormalPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    unsigned int total = settings.startPixel - settings.endPixel + 1;
+    unsigned int total = settings.endPixel - settings.startPixel + 1;
     bool toPaint = false;
 
     for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++) {
-        toPaint = i < total * parseResult.progress;
+        toPaint = i + settings.startPixel < total * parseResult.progress;
         doPaintLinear(settings, i, toPaint);
     }
 
@@ -56,11 +56,11 @@ void NormalPainter::paint(const PresetSettings& settings, const ParseResult& par
 }
 
 void ReversedPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    unsigned int total = settings.startPixel - settings.endPixel + 1;
+    unsigned int total = settings.endPixel - settings.startPixel + 1;
     bool toPaint = false;
 
     for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++) {
-        toPaint = i > total * parseResult.progress;
+        toPaint = i + settings.startPixel > total * parseResult.progress;
         doPaintLinear(settings, i, toPaint);
     }
 
@@ -68,7 +68,7 @@ void ReversedPainter::paint(const PresetSettings& settings, const ParseResult& p
 }
 
 void CenterPainter::paint(const PresetSettings& settings, const ParseResult& parseResult) {
-    unsigned int total = settings.startPixel - settings.endPixel + 1;
+    unsigned int total = settings.endPixel - settings.startPixel + 1;
     unsigned int pixelsToPaint = total * parseResult.progress;
     unsigned int centerPixel = settings.startPixel + total / 2;
     unsigned int borderLeft = centerPixel - pixelsToPaint;
@@ -77,7 +77,7 @@ void CenterPainter::paint(const PresetSettings& settings, const ParseResult& par
 
     for (unsigned int i = settings.startPixel; i <= settings.endPixel; i++)
     {
-        toPaint = (pixelsToPaint >= 1) && (i > borderLeft || i < borderRight);
+        toPaint = (pixelsToPaint >= 1) && (i + settings.startPixel > borderLeft || i + settings.startPixel < borderRight);
         doPaintLinear(settings, i, toPaint);
     }
 
