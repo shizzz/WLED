@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>
-#include <variant>
 #include <string>
 #include "../MonitorTypes.h"
 
